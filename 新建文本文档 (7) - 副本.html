@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>田字格成语填空</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --secondary: #2196F3;
+            --text: #333;
+        }
+
+        body {
+            font-family: "PingFang SC", system-ui;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            width: 100%;
+            max-width: 500px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-item {
+            background: white;
+            padding: 0.8rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* 田字格容器 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            width: 100%;
+            max-width: 320px;
+            margin: 1rem 0;
+        }
+
+        /* 单个田字格 */
+        .tian-cell {
+            aspect-ratio: 1;
+            border: 2px solid var(--text);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            background: white;
+        }
+
+        /* 田字格十字线 */
+        .tian-cell::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: rgba(0,0,0,0.2);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .tian-cell::after {
+            content: "";
+            position: absolute;
+            height: 100%;
+            width: 1px;
+            background: rgba(0,0,0,0.2);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* 输入区域 */
+        .input-area {
+            width: 100%;
+            max-width: 300px;
+            margin: 1rem 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2rem;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:active {
+            opacity: 0.9;
+        }
+
+        /* 结果提示 */
+        .result {
+            text-align: center;
+            margin-top: 1rem;
+            min-height: 1.5rem;
+            font-size: 1rem;
+        }
+
+        /* 手机适配 */
+        @media (max-width: 375px) {
+            .tian-cell {
+                font-size: 1.5rem;
+            }
+            
+            input {
+                font-size: 1rem;
+                padding: 10px;
+            }
+            
+            button {
+                font-size: 1rem;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <div class="status-item">
+            🏦 余额：<span id="balance">0.00</span>元
+        </div>
+        <div class="status-item">
+            🕒 时间：<span id="time">-</span>
+        </div>
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+
+    <div class="input-area">
+        <input type="text" id="answer" placeholder="输入缺失汉字" maxlength="1" autocomplete="off">
+        <button onclick="checkAnswer()">提交答案</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        let balance = 0;
+        let currentIdiom;
+        let blankIndex;
+
+        const idioms = [
+            { word: "守株待兔", blank: 2 },
+            { word: "画龙点睛", blank: 3 },
+            { word: "望梅止渴", blank: 1 },
+            { word: "破釜沉舟", blank: 2 },
+            { word: "亡羊补牢", blank: 3 }
+        ];
+
+        // 生成田字格
+        function createGrid(word, blankIndex) {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            
+            for(let i=0; i<4; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'tian-cell';
+                cell.textContent = i === blankIndex ? '_' : word[i];
+                if(i === blankIndex) cell.style.color = '#999';
+                grid.appendChild(cell);
+            }
+        }
+
+        // 更新状态
+        function updateStatus(amount) {
+            balance += amount;
+            document.getElementById('balance').textContent = balance.toFixed(2);
+            document.getElementById('time').textContent = new Date().toLocaleTimeString();
+        }
+
+        // 生成新题目
+        function newQuestion() {
+            currentIdiom = idioms[Math.floor(Math.random() * idioms.length)];
+            blankIndex = currentIdiom.blank;
+            createGrid(currentIdiom.word, blankIndex);
+            document.getElementById('answer').value = '';
+            document.getElementById('answer').focus();
+        }
+
+        // 检查答案
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer').value.trim();
+            const resultDiv = document.getElementById('result');
+            const correctChar = currentIdiom.word[blankIndex];
+
+            if(!userAnswer) return;
+
+            if(userAnswer === correctChar) {
+                const reward = (Math.random() * 1.5 + 0.5).toFixed(2);
+                updateStatus(parseFloat(reward));
+                
+                // 更新田字格显示
+                const cells = document.getElementsByClassName('tian-cell');
+                cells[blankIndex].textContent = correctChar;
+                cells[blankIndex].style.color = 'var(--primary)';
+                cells[blankIndex].style.animation = 'pop 0.3s';
+                
+                resultDiv.textContent = `🎉 正确！获得 ${reward} 元`;
+                resultDiv.style.color = 'var(--primary)';
+                
+                setTimeout(newQuestion, 1200);
+            } else {
+                resultDiv.textContent = "❌ 答案错误，正确应为：" + correctChar;
+                resultDiv.style.color = '#f44336';
+                document.getElementById('answer').select();
+            }
+        }
+
+        // 初始化
+        newQuestion();
+        document.getElementById('answer').addEventListener('keypress', e => {
+            if(e.key === 'Enter') checkAnswer();
+        });
+
+        // 更新时间
+        setInterval(() => {
+            document.getElementById('time').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+    </script>
+</body>
+</html>
